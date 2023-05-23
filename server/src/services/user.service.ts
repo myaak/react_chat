@@ -1,4 +1,4 @@
-import UserErrors from "../UserErrors";
+import UserErrors from "../exceptions/user.errors";
 import { ifUserExists, userExists } from './utils/UserUtils'
 const tokenService = require('../services/token.service')
 const bcrypt = require('bcrypt')
@@ -7,7 +7,7 @@ const ApiError = require('../exceptions/api.error')
 
 class UserService {
   async registration(email: string, password: string) {
-    const candidate = await userExists(email); 
+    const candidate = await userExists(email);
 
     if (candidate) {
       throw ApiError.BadRequest(new UserErrors().existedUser());
@@ -45,7 +45,7 @@ class UserService {
       }
 
 
-    } catch (e){
+    } catch (e) {
       console.log(e)
     }
   }
@@ -55,7 +55,7 @@ class UserService {
       throw ApiError.BadRequest(new UserErrors().notExistedUser());
     }
 
-    const user = await ifUserExists(email); 
+    const user = await ifUserExists(email);
 
     const isPassEqual = await bcrypt.compare(password, user.password);
 
