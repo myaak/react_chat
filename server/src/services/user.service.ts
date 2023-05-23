@@ -1,15 +1,16 @@
 import UserErrors from "../UserErrors";
-import { userExists } from './utils/UserUtils'
+import { ifUserExists, userExists } from './utils/UserUtils'
 const tokenService = require('../services/token.service')
 const bcrypt = require('bcrypt')
 const pool = require('../database/database')
+const ApiError = require('../exceptions/api.error')
 
 class UserService {
   async registration(email: string, password: string) {
     const candidate = await userExists(email); 
 
     if (candidate) {
-      throw new UserErrors().existedUser();
+      throw ApiError.BadRequest(new UserErrors().existedUser());
     }
 
     try {
@@ -34,7 +35,7 @@ class UserService {
         email: insertedUser.rows[0].email
       }
 
-      const tokens = tokenService.generateToken({...finalUser});
+      const tokens = tokenService.generateToken(finalUser);
 
       await tokenService.saveToken(insertedUser.rows[0].id, tokens.refreshToken);
 
@@ -47,6 +48,38 @@ class UserService {
     } catch (e){
       console.log(e)
     }
+  }
+
+  async login(email: string, password: string) {
+    if (!userExists) {
+      throw ApiError.BadRequest(new UserErrors().notExistedUser());
+    }
+
+    const user = await ifUserExists(email); 
+
+    const isPassEqual = await bcrypt.compare(password, user.password);
+
+    if (!isPassEqual) {
+      throw ApiError.BadRequest(new UserErrors().wrongEmailOrPassword());
+    }
+
+    const finalUser = {
+      id: user.id,
+      email: user.email
+    }
+
+    const tokens = tokenService.generateToken(finalUser);
+
+    await tokenService.saveToken(finalUser.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: finalUser
+    }
+  }
+
+  async logout(refreshToken: string) {
+    await tokenService.removeToken(refreshToken);
   }
 }
 

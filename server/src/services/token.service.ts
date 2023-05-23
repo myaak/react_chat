@@ -16,8 +16,15 @@ class TokenService {
 
   async saveToken(userId: number, refreshToken: any) {
     await pool.query(
-      "UPDATE USERS_TOKEN SET REFRESH_TOKEN = $1 WHERE USER_ID = $2",
-      [refreshToken, userId]
+      "INSERT INTO USERS_TOKEN (USER_ID, REFRESH_TOKEN) VALUES($1, $2)",
+      [userId, refreshToken]
+    )
+  }
+
+  async removeToken(refreshToken: any) {
+    await pool.query(
+      "DELETE FROM USERS_TOKEN WHERE REFRESH_TOKEN = $1",
+      [refreshToken]
     )
   }
 }
